@@ -1,0 +1,251 @@
+---
+title: "NETFLIX Análisis"
+author: "Jorge Guzmán"
+date: "30/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+En este documento haremos un breve análisis de una base de datos de Netflix. 
+Las bases obtenidas fueron importadas del siguiente link:
+<https://www.kaggle.com/datasets/victorsoeiro/netflix-tv-shows-and-movies>
+
+
+Después de haberlas descargado lo primero que haremos será importarlas.
+```{r}
+titles<-read.csv("titles.csv", encoding="UTF-8") #Usamos UTF-8 para los acentos
+cast<-read.csv("credits.csv", encoding="UTF-8")
+```
+Para nuestro análisis utilizaremos la paquetería "tidyverse", la llamamos:
+
+```{r}
+library(tidyverse)
+```
+
+Lo primero que haremos con nuestras bases será un pequeño análisis explotario, para
+ver su composición
+
+```{r}
+colnames(titles)
+str(titles)
+summary(titles)
+
+colnames(cast)
+str(cast)
+summary(cast)
+```
+
+En este caso, ambas bases se encuentran limpias así que no será necesario realizar correcciones, procederemos a realizar una visualización y análisis de los datos.
+
+# Visualización de datos
+
+Lo primero que haremos será averiguar como se compone el catálogo respecto a la cantidad de películas y de series.
+
+```{r}
+ggplot(titles)+
+  geom_bar(aes(x=type, fill=type))+
+  labs(title="Cantidad de contenido por tipo", y="Cantidad", x="Tipo")+
+  theme_minimal()
+```
+
+
+Como podemos observar, el catálogo de películas disponibles es casi del doble de lo correspondiente a shows.
+
+```{r}
+base1<-filter(titles, type=="MOVIE")
+mean(base1$runtime)
+base2<-filter(titles, type=="SHOW")
+mean(base2$runtime)
+mean(base2$seasons)
+```
+
+También notamos que el promedio de duración de las películas es de 98 minutos a diferencia de las series que es de 38 minutos. Además, las series tienen un promedio de 2.16 temporadas.
+
+## Películas
+
+```{r}
+titles %>% filter(type=="MOVIE") %>%   
+  ggplot()+
+  geom_histogram(aes(x=release_year), binwidth = 5)+
+  theme_minimal()
+```
+
+
+Respecto a los años de publicación de las películas podemos observar que la gran mayoría tiene una antigÜedad de 5 a 10 años, por lo que podemos decir que las películas están actualizadas.
+
+```{r}
+movies<-filter(titles, type=="MOVIE")
+titles2010 <- movies %>% 
+  filter(release_year>2010) 
+nrow(titles2010)/nrow(movies)
+titles2015 <- movies %>% 
+  filter(release_year>2015) 
+nrow(titles2015)/nrow(movies)
+```
+
+
+En el caso de las películas el 85% fueron estrenadas hace menos de 10 años y el 71% hace menos de 5 años.
+
+```{r}
+titles %>% filter(type=="MOVIE") %>% 
+  select(title, imdb_score, release_year) %>% 
+  arrange(-imdb_score) %>% 
+  head(10)
+titles1 <- filter(titles, type=="MOVIE")
+summary(titles1$imdb_score)
+
+```
+En la tabla anterior observamos cuales son las 10 películas con mayor calificación según IMDB, y también obtenemos que la calificación promedio para una película es de 6.26.
+
+# Series
+
+```{r}
+titles %>% filter(type=="SHOW") %>%   
+  ggplot()+
+  geom_histogram(aes(x=release_year), binwidth = 5)+
+  theme_minimal()
+
+```
+```{r}
+series<-filter(titles, type=="SHOW")
+titles2010 <- series %>% 
+  filter(release_year>2010) 
+nrow(titles2010)/nrow(series)
+titles2015 <- series %>% 
+  filter(release_year>2015) 
+nrow(titles2015)/nrow(series)
+```
+En el caso de las series el 92% se estrenó hace menos de 10 años y el 80% hace menos de 5 años. 
+
+```{r}
+series %>% 
+  select(title, seasons, release_year) %>% 
+  arrange(-seasons) %>% 
+  head(10)
+```
+
+
+
+En la tabla anterior podemos observar las series con el mayor número de temporadas, ocupando el primer puesto Survivor con un total de 42 temporadas.
+
+
+```{r}
+series %>% 
+  select(title, imdb_score, release_year) %>% 
+  arrange(-imdb_score) %>% 
+  head(10)
+```
+
+
+En la tabla anterior tenemos el Top 10 de las series mejor calificadas. Podemos ver que dentro de los primeros lugares encontramos Breaking Bad y Avatar.
+
+# Actores y Directores
+
+Ahora estamos interesados en saber cuales son los actores y directores que han participado en más proyectos y también cuales han obtenido un mejor desempeño.
+Para lograr el objetivo anterior primero será necesario realizar un join entre las dos bases de datos, para ellos utilizaremos la columna id que se encuentra en ambas columnas, primero filtraremos las columnas que requerimos por cada base:
+
+#### titles
+* id
+* title
+* imdb_score
+
+#### cast
+* id 
+* name
+* role
+
+```{r}
+titles1<-titles %>% 
+  select(id, title, imdb_score)
+head(titles1)
+
+cast1<-cast %>% 
+  select(id, name, role)
+head(cast1)
+
+```
+
+Ahora procederemos a realizar el join:
+```{r}
+base1<-merge(x=cast1, y=titles1, by.x="id", by.y="id", all.x=TRUE)
+head(base1)
+```
+## Directores
+
+Primero veremos cuáles son los directores con más participaciones.
+
+```{r}
+directores<-filter(base1, role=="DIRECTOR")
+directores %>% group_by(name) %>% 
+  summarise(n=n(), promedio=mean(imdb_score)) %>% 
+  arrange(-n) %>% 
+  head(10)
+
+```
+
+Como podemos observar el director con más participaciones es Raúl Campos con 21.
+
+Ahora averiguaremos cual es el director con un mejor promedio de calificaciones en sus películas.
+
+```{r}
+directores %>% group_by(name) %>% 
+  summarise(promedio=mean(imdb_score)) %>% 
+  arrange(-promedio) %>% 
+  head(10)
+```
+
+En este caso tenemos a Jason Hehir liderando la lista. Pero ahora seremos un poco más exigentes y sólo meteremos al ranking a directores con más de 5 películas.
+
+```{r}
+directores %>% group_by(name) %>% 
+  summarise(n=n(), promedio=mean(imdb_score)) %>% 
+  filter(n>5) %>% 
+  arrange(-promedio) %>% 
+  head(10)
+```
+
+Dado este criterio el director con mayor calificación promedio en sus películas es Mani Ratnam.
+
+## Actores
+
+Primero veremos cuáles son los actores con más participaciones.
+
+```{r}
+actores<-filter(base1, role=="ACTOR")
+actores %>% group_by(name) %>% 
+  summarise(n=n(), promedio=mean(imdb_score)) %>% 
+  arrange(-n) %>% 
+  head(10)
+
+```
+
+El actor con más participaciones es Shah Rukh Khan de origen indio, con un total de 30 participaciones.
+
+
+```{r}
+actores<-filter(base1, role=="ACTOR")
+actores %>% group_by(name) %>% 
+  summarise(promedio=mean(imdb_score)) %>% 
+  arrange(-promedio) %>% 
+  head(10)
+
+```
+
+Las actrices cuyas películas realizadas cuentan con un mejor promedio de calificación son Anna Gunn y Betsy Brandt, ambas americanas con papeles importantes en Breaking Bad.
+
+Ahora veremos que pasa con la lista anterior al considerar actores que hayan realizado más de 5 películas.
+
+```{r}
+actores %>% group_by(name) %>% 
+  summarise(n=n(), promedio=mean(imdb_score)) %>% 
+  filter(n>5) %>% 
+  arrange(-promedio) %>% 
+  head(10)
+```
+
+Ahora el actor que se lleva el título es You Chea-Myung de origen surcoreano.
+
+
