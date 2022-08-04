@@ -145,7 +145,7 @@ En la tabla anterior tenemos el Top 10 de las series mejor calificadas. Podemos 
 # Actores y Directores
 
 Ahora estamos interesados en saber cuales son los actores y directores que han participado en más proyectos y también cuales han obtenido un mejor desempeño.
-Para lograr el objetivo anterior primero será necesario realizar un join entre las dos bases de datos, para ellos utilizaremos la columna id que se encuentra en ambas columnas, primero filtraremos las columnas que requerimos por cada base:
+Para lograr el objetivo anterior primero será necesario realizar un join entre las dos bases de datos, para ellos utilizaremos la columna id que se encuentra en ambas bases, primero filtraremos las columnas que requerimos por cada base:
 
 #### titles
 * id
